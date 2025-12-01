@@ -22,7 +22,7 @@ experimental:
   plugins:
     token-auth:
       moduleName: github.com/flohoss/token-auth
-      version: v1.0.0
+      version: v0.1.1
 ```
 
 Or with Docker labels:
@@ -30,7 +30,7 @@ Or with Docker labels:
 ```yaml
 labels:
   - 'traefik.experimental.plugins.token-auth.modulename=github.com/flohoss/token-auth'
-  - 'traefik.experimental.plugins.token-auth.version=v1.0.0'
+  - 'traefik.experimental.plugins.token-auth.version=v0.1.1'
 ```
 
 ### Dynamic Configuration
@@ -138,7 +138,7 @@ services:
     image: traefik:v2.10
     command:
       - '--experimental.plugins.token-auth.modulename=github.com/flohoss/token-auth'
-      - '--experimental.plugins.token-auth.version=v1.0.0'
+      - '--experimental.plugins.token-auth.version=v0.1.1'
     ports:
       - '80:80'
       - '443:443'
