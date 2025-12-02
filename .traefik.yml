@@ -1,4 +1,4 @@
-displayName: Token Authentication
+displayName: Query Token Authentication
 type: middleware
 import: github.com/flohoss/token-auth
 summary: Query-Token authentication middleware

@@ -1,3 +1,3 @@
 module github.com/flohoss/token-auth
 
-go 1.25
+go 1.24.0
