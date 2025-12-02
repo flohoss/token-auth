@@ -107,9 +107,9 @@ func hashToken(token string) string {
 }
 
 type Config struct {
-	TokenParam    string   `json:"token_param,omitempty"`
-	CookieName    string   `json:"cookie_name,omitempty"`
-	AllowedTokens []string `json:"allowed_tokens,omitempty"`
+	TokenParam    string
+	CookieName    string
+	AllowedTokens []string
 }
 
 func CreateConfig() *Config {

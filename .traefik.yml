@@ -3,8 +3,8 @@ type: middleware
 import: github.com/flohoss/token-auth
 summary: Query-Token authentication middleware
 testData:
-  token_param: token
-  cookie_name: auth_session
-  allowed_tokens:
+  tokenParam: token
+  cookieName: auth_session
+  allowedTokens:
     - secret-token-1
     - secret-token-2
