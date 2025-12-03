@@ -1,4 +1,4 @@
-package token_auth
+package cookie
 
 import "net/http"
 
@@ -10,7 +10,7 @@ type CookieConfig struct {
 	MaxAge   int
 }
 
-func parseSameSite(sameSite string) http.SameSite {
+func ParseSameSite(sameSite string) http.SameSite {
 	switch sameSite {
 	case "Lax":
 		return http.SameSiteLaxMode
@@ -23,7 +23,7 @@ func parseSameSite(sameSite string) http.SameSite {
 	}
 }
 
-func defaultCookieConfig() CookieConfig {
+func DefaultCookieConfig() CookieConfig {
 	return CookieConfig{
 		Name:     "auth_session",
 		HttpOnly: true,

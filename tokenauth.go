@@ -1,31 +1,28 @@
-package token_auth
+package tokenauth
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/flohoss/token-auth/pkg/cookie"
+	"github.com/flohoss/token-auth/pkg/ratelimiter"
+	"github.com/flohoss/token-auth/pkg/token"
 )
 
-func hashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(hash[:])
-}
-
 type Config struct {
-	TokenParam          string       `json:"tokenParam,omitempty"`
-	AllowedTokens       []string     `json:"allowedTokens,omitempty"`
-	MaxRateLimitEntries int          `json:"maxRateLimitEntries,omitempty"`
-	Cookie              CookieConfig `json:"cookie,omitempty"`
+	TokenParam          string              `json:"tokenParam,omitempty"`
+	AllowedTokens       []string            `json:"allowedTokens,omitempty"`
+	MaxRateLimitEntries int                 `json:"maxRateLimitEntries,omitempty"`
+	Cookie              cookie.CookieConfig `json:"cookie,omitempty"`
 }
 
 func CreateConfig() *Config {
 	return &Config{
 		TokenParam:          "token",
 		MaxRateLimitEntries: 10000,
-		Cookie:              defaultCookieConfig(),
+		Cookie:              cookie.DefaultCookieConfig(),
 	}
 }
 
@@ -34,7 +31,8 @@ type tokenAuth struct {
 	name          string
 	tokenParam    string
 	allowedTokens []string
-	rateLimiter   *AuthRateLimiter
+	rateLimiter   *ratelimiter.RateLimiter
+	token         *token.Token
 	maxEntries    int
 	cookie        *http.Cookie
 }
@@ -65,7 +63,8 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		name:          name,
 		tokenParam:    config.TokenParam,
 		allowedTokens: config.AllowedTokens,
-		rateLimiter:   NewAuthRateLimiter(),
+		rateLimiter:   ratelimiter.New(),
+		token:         token.New(config.AllowedTokens),
 		maxEntries:    config.MaxRateLimitEntries,
 		cookie: &http.Cookie{
 			Name:     config.Cookie.Name,
@@ -73,42 +72,42 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 			HttpOnly: config.Cookie.HttpOnly,
 			Secure:   config.Cookie.Secure,
 			MaxAge:   config.Cookie.MaxAge,
-			SameSite: parseSameSite(config.Cookie.SameSite),
+			SameSite: cookie.ParseSameSite(config.Cookie.SameSite),
 		},
 	}, nil
 }
 
 func (t *tokenAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	clientIP := req.Header.Get("X-Real-IP")
-	if t.rateLimiter != nil && t.rateLimiter.isBlocked(clientIP) {
+	if t.rateLimiter != nil && t.rateLimiter.IsBlocked(clientIP) {
 		http.Error(rw, "Too many failed attempts. Try again later.", http.StatusTooManyRequests)
 		return
 	}
 
 	cookie, err := req.Cookie(t.cookie.Name)
-	if err == nil && t.isTokenValid(cookie.Value, true) {
+	if err == nil && t.token.Valid(cookie.Value, true) {
 		t.next.ServeHTTP(rw, req)
 		return
 	}
 
-	token := req.URL.Query().Get(t.tokenParam)
-	if token == "" {
+	param := req.URL.Query().Get(t.tokenParam)
+	if param == "" {
 		if t.rateLimiter != nil {
-			t.rateLimiter.recordFailedAttempt(clientIP, t.maxEntries)
+			t.rateLimiter.RecordFailedAttempt(clientIP, t.maxEntries)
 		}
 		http.Error(rw, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	if !t.isTokenValid(token, false) {
+	if !t.token.Valid(param, false) {
 		if t.rateLimiter != nil {
-			t.rateLimiter.recordFailedAttempt(clientIP, t.maxEntries)
+			t.rateLimiter.RecordFailedAttempt(clientIP, t.maxEntries)
 		}
 		http.Error(rw, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	t.cookie.Value = hashToken(token)
+	t.cookie.Value = token.HashToken(param)
 	http.SetCookie(rw, t.cookie)
 
 	q := req.URL.Query()
@@ -123,23 +122,4 @@ func (t *tokenAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	http.Redirect(rw, req, newURL.String(), http.StatusTemporaryRedirect)
-}
-
-func (t *tokenAuth) isTokenValid(token string, isHash bool) bool {
-	if len(t.allowedTokens) == 0 {
-		return false
-	}
-
-	providedHash := token
-	if !isHash {
-		providedHash = hashToken(token)
-	}
-
-	for _, allowedToken := range t.allowedTokens {
-		allowedHash := hashToken(allowedToken)
-		if providedHash == allowedHash {
-			return true
-		}
-	}
-	return false
 }

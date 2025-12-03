@@ -1,4 +1,4 @@
-package token_auth
+package ratelimiter
 
 import (
 	"testing"
@@ -6,31 +6,31 @@ import (
 )
 
 func TestRateLimiter_BasicBlocking(t *testing.T) {
-	rl := NewAuthRateLimiter()
+	rl := New()
 	ip := "192.168.1.1"
 
-	if rl.isBlocked(ip) {
+	if rl.IsBlocked(ip) {
 		t.Error("IP should not be blocked initially")
 	}
 
 	for i := 0; i < 5; i++ {
-		rl.recordFailedAttempt(ip, 1000)
+		rl.RecordFailedAttempt(ip, 1000)
 	}
 
-	if !rl.isBlocked(ip) {
+	if !rl.IsBlocked(ip) {
 		t.Error("IP should be blocked after 5 attempts")
 	}
 }
 
 func TestRateLimiter_TimeReset(t *testing.T) {
-	rl := NewAuthRateLimiter()
+	rl := New()
 	ip := "192.168.1.1"
 
 	for i := 0; i < 5; i++ {
-		rl.recordFailedAttempt(ip, 1000)
+		rl.RecordFailedAttempt(ip, 1000)
 	}
 
-	if !rl.isBlocked(ip) {
+	if !rl.IsBlocked(ip) {
 		t.Error("IP should be blocked")
 	}
 
@@ -38,18 +38,18 @@ func TestRateLimiter_TimeReset(t *testing.T) {
 	rl.lastTry[ip] = time.Now().Add(-2 * time.Hour)
 	rl.mu.Unlock()
 
-	if rl.isBlocked(ip) {
+	if rl.IsBlocked(ip) {
 		t.Error("IP should be unblocked after time reset")
 	}
 }
 
 func TestRateLimiter_LRUEviction(t *testing.T) {
-	rl := NewAuthRateLimiter()
+	rl := New()
 	maxEntries := 10
 
 	for i := 0; i < maxEntries; i++ {
 		ip := "192.168.1." + string(rune('0'+i))
-		rl.recordFailedAttempt(ip, maxEntries)
+		rl.RecordFailedAttempt(ip, maxEntries)
 	}
 
 	rl.mu.RLock()
@@ -61,7 +61,7 @@ func TestRateLimiter_LRUEviction(t *testing.T) {
 	}
 
 	newIP := "192.168.1.99"
-	rl.recordFailedAttempt(newIP, maxEntries)
+	rl.RecordFailedAttempt(newIP, maxEntries)
 
 	rl.mu.RLock()
 	count = len(rl.attempts)
@@ -73,19 +73,19 @@ func TestRateLimiter_LRUEviction(t *testing.T) {
 }
 
 func TestRateLimiter_MultipleIPs(t *testing.T) {
-	rl := NewAuthRateLimiter()
+	rl := New()
 	ip1 := "192.168.1.1"
 	ip2 := "192.168.1.2"
 
 	for i := 0; i < 5; i++ {
-		rl.recordFailedAttempt(ip1, 1000)
+		rl.RecordFailedAttempt(ip1, 1000)
 	}
 
-	if !rl.isBlocked(ip1) {
+	if !rl.IsBlocked(ip1) {
 		t.Error("IP1 should be blocked")
 	}
 
-	if rl.isBlocked(ip2) {
+	if rl.IsBlocked(ip2) {
 		t.Error("IP2 should not be blocked")
 	}
 }

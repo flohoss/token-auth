@@ -1,4 +1,4 @@
-package token_auth
+package cookie
 
 import (
 	"net/http"
@@ -18,15 +18,15 @@ func TestParseSameSite(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := parseSameSite(tt.input)
+		result := ParseSameSite(tt.input)
 		if result != tt.expected {
-			t.Errorf("parseSameSite(%q) = %v, expected %v", tt.input, result, tt.expected)
+			t.Errorf("ParseSameSite(%q) = %v, expected %v", tt.input, result, tt.expected)
 		}
 	}
 }
 
 func TestDefaultCookieConfig(t *testing.T) {
-	config := defaultCookieConfig()
+	config := DefaultCookieConfig()
 
 	if config.Name != "auth_session" {
 		t.Errorf("Expected Name 'auth_session', got '%s'", config.Name)

@@ -1,24 +1,24 @@
-package token_auth
+package ratelimiter
 
 import (
 	"sync"
 	"time"
 )
 
-type AuthRateLimiter struct {
+type RateLimiter struct {
 	attempts map[string]int
 	lastTry  map[string]time.Time
 	mu       sync.RWMutex
 }
 
-func NewAuthRateLimiter() *AuthRateLimiter {
-	return &AuthRateLimiter{
+func New() *RateLimiter {
+	return &RateLimiter{
 		attempts: make(map[string]int),
 		lastTry:  make(map[string]time.Time),
 	}
 }
 
-func (rl *AuthRateLimiter) isBlocked(ip string) bool {
+func (rl *RateLimiter) IsBlocked(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -35,17 +35,17 @@ func (rl *AuthRateLimiter) isBlocked(ip string) bool {
 	return attempts >= 5
 }
 
-func (rl *AuthRateLimiter) shouldResetAttemptsForIP(ip string) bool {
+func (rl *RateLimiter) shouldResetAttemptsForIP(ip string) bool {
 	lastTry, exists := rl.lastTry[ip]
 	return exists && time.Since(lastTry) > time.Hour
 }
 
-func (rl *AuthRateLimiter) resetAttemptsForIP(ip string) {
+func (rl *RateLimiter) resetAttemptsForIP(ip string) {
 	delete(rl.attempts, ip)
 	delete(rl.lastTry, ip)
 }
 
-func (rl *AuthRateLimiter) recordFailedAttempt(ip string, maxEntries int) {
+func (rl *RateLimiter) RecordFailedAttempt(ip string, maxEntries int) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -60,7 +60,7 @@ func (rl *AuthRateLimiter) recordFailedAttempt(ip string, maxEntries int) {
 	rl.lastTry[ip] = now
 }
 
-func (rl *AuthRateLimiter) evictOldestEntry() {
+func (rl *RateLimiter) evictOldestEntry() {
 	if len(rl.lastTry) == 0 {
 		return
 	}
