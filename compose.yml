@@ -1,0 +1,31 @@
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --log.level=DEBUG
+      - --accesslog
+      - --experimental.localPlugins.tokenauth.moduleName=github.com/flohoss/tokenauth
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/plugins-local/src/github.com/flohoss/tokenauth/
+
+  whoami:
+    image: traefik/whoami:latest
+    command: >-
+      -name whoami -verbose true
+    labels:
+      - 'traefik.http.routers.tokenauth.rule=Host(`whoami.localhost`)'
+      - 'traefik.http.routers.tokenauth.middlewares=tokenauth'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.tokenParam=token'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.maxRateLimitEntries=10000'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.name=auth_session'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.httpOnly=true'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.secure=true'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.sameSite=Strict'
+      # - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.maxAge=0'
+      - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.allowedTokens[0]=not-secure'

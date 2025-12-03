@@ -61,14 +61,14 @@ Or with Docker labels:
 
 ```yaml
 labels:
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.tokenParam=token'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.maxRateLimitEntries=10000'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.cookie.name=auth_session'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.cookie.httpOnly=true'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.cookie.secure=true'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.cookie.sameSite=Strict'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.cookie.maxAge=0'
-  - 'traefik.http.middlewares.auth.plugin.tokenauth.allowedTokens[0]=replace-with-secure-token'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.tokenParam=token'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.maxRateLimitEntries=10000'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.name=auth_session'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.httpOnly=true'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.secure=true'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.sameSite=Strict'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.maxAge=0'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.allowedTokens[0]=your-secret-token'
 ```
 
 ### Apply to Routes
@@ -87,7 +87,8 @@ Or with Docker:
 
 ```yaml
 labels:
-  - 'traefik.http.routers.my-router.middlewares=my-tokenauth@docker'
+  - 'traefik.http.routers.my-router.rule=Host(`example.com`)'
+  - 'traefik.http.routers.my-router.middlewares=tokenauth'
 ```
 
 ## Configuration Options
@@ -130,7 +131,8 @@ middlewares:
   my-tokenauth:
     plugin:
       tokenauth:
-        cookieMaxAge: 2592000  # 30 days in seconds
+        cookie:
+          maxAge: 2592000  # 30 days in seconds
         # ... other config
 ```
 
