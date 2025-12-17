@@ -96,7 +96,8 @@ Invalid tokens:
 Generate tokens using cryptographically secure methods:
 
 ```bash
-openssl rand -base64 32
+# Generate 32 random bytes as hex (64 characters)
+openssl rand -hex 32
 ```
 
 ### Apply to Routes
@@ -121,16 +122,16 @@ labels:
 
 ## Configuration Options
 
-| Parameter          | Type     | Default          | Description                                               |
-| ------------------ | -------- | ---------------- | --------------------------------------------------------- |
-| `tokenParam`       | string   | `"token"`        | Query parameter name for the authentication token         |
+| Parameter          | Type     | Default          | Description                                                                                                    |
+| ------------------ | -------- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| `tokenParam`       | string   | `"token"`        | Query parameter name for the authentication token                                                              |
 | `errorRedirectURL` | string   | empty            | Absolute URL for auth failures (must include scheme like https:// or http://, e.g., https://example.com/error) |
-| `cookie.name`      | string   | `"auth_session"` | Name of the session cookie                                |
-| `cookie.httpOnly`  | bool     | `true`           | Set HttpOnly flag on cookies                              |
-| `cookie.secure`    | bool     | `true`           | Set Secure flag on cookies (requires HTTPS)               |
-| `cookie.sameSite`  | string   | `"Strict"`       | SameSite attribute: "Strict", "Lax", or "None"            |
-| `cookie.maxAge`    | int      | `0`              | Cookie max age in seconds (0 = session cookie)            |
-| `allowedTokens`    | []string | `[]`             | List of valid authentication tokens                       |
+| `cookie.name`      | string   | `"auth_session"` | Name of the session cookie                                                                                     |
+| `cookie.httpOnly`  | bool     | `true`           | Set HttpOnly flag on cookies                                                                                   |
+| `cookie.secure`    | bool     | `true`           | Set Secure flag on cookies (requires HTTPS)                                                                    |
+| `cookie.sameSite`  | string   | `"Strict"`       | SameSite attribute: "Strict", "Lax", or "None"                                                                 |
+| `cookie.maxAge`    | int      | `0`              | Cookie max age in seconds (0 = session cookie)                                                                 |
+| `allowedTokens`    | []string | `[]`             | List of valid authentication tokens                                                                            |
 
 ## Security
 
@@ -141,6 +142,7 @@ Tokens are enforced to be at least 32 characters long, preventing weak tokens fr
 ### Failed Attempt Handling
 
 When a request fails authentication (invalid token or missing cookie), the middleware either:
+
 - Redirects to the configured `errorRedirectURL` with `HTTP 303 See Other`, or
 - Returns `HTTP 403 Forbidden` with plain text response (if no redirect URL configured)
 
@@ -177,6 +179,7 @@ Users are redirected with `HTTP 303 See Other` to your custom error page. The `e
 
 **Option 2: Plain Text 403 Response (Default)**
 If `errorRedirectURL` is not configured, users receive:
+
 - **Status Code**: `HTTP 403 Forbidden`
 - **Body**: Plain text "Forbidden"
 - No HTML page, minimal response footprint
