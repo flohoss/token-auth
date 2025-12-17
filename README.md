@@ -1,13 +1,12 @@
 # Token Authentication Middleware for Traefik
 
-A Traefik middleware plugin that provides token-based authentication with secure session management and rate limiting.
+A Traefik middleware plugin that provides token-based authentication with secure session management.
 
 ## Features
 
 - Token-based authentication via query parameters
 - Secure session cookies with SHA-256 hashed tokens
-- Built-in rate limiting (5 failed attempts per hour per IP)
-- Memory-safe with LRU eviction (max 10,000 tracked IPs)
+- Token parameter takes priority over stored cookies
 - Automatic URL cleanup (removes token from URL after authentication)
 - HttpOnly, Secure, and SameSite cookie protection
 
@@ -45,7 +44,6 @@ http:
       plugin:
         tokenauth:
           tokenParam: 'token'
-          maxRateLimitEntries: 10000
           cookie:
             name: 'auth_session'
             httpOnly: true
@@ -62,7 +60,6 @@ Or with Docker labels:
 ```yaml
 labels:
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.tokenParam=token'
-  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.maxRateLimitEntries=10000'
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.name=auth_session'
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.httpOnly=true'
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.secure=true'
@@ -96,7 +93,6 @@ labels:
 | Parameter              | Type     | Default          | Description                                         |
 | ---------------------- | -------- | ---------------- | --------------------------------------------------- |
 | `tokenParam`           | string   | `"token"`        | Query parameter name for the authentication token   |
-| `maxRateLimitEntries`  | int      | `10000`          | Maximum number of IPs tracked by rate limiter       |
 | `cookie.name`          | string   | `"auth_session"` | Name of the session cookie                          |
 | `cookie.httpOnly`      | bool     | `true`           | Set HttpOnly flag on cookies                        |
 | `cookie.secure`        | bool     | `true`           | Set Secure flag on cookies (requires HTTPS)         |
@@ -136,29 +132,21 @@ middlewares:
         # ... other config
 ```
 
-## Rate Limiting
+## Authentication Flow
 
-The middleware includes built-in protection against brute-force attacks:
+The middleware implements the following authentication priority:
 
-- **Limit**: 5 failed authentication attempts per IP address
-- **Window**: 1 hour
-- **Reset**: Automatically resets after 1 hour of the last failed attempt
-- **Response**: HTTP 429 "Too many failed attempts. Try again later."
-- **Memory Protection**: LRU eviction when tracking limit (10,000 IPs) is reached
+1. **Token Parameter (Highest Priority)**: If a token is provided in the query parameter:
+   - Validates the token against the allowed tokens list
+   - On success: Sets the session cookie with hashed token and redirects (clean URL)
+   - On failure: Returns HTTP 401 Unauthorized
 
-Rate limiting is tracked using the `X-Real-IP` header (set by Traefik).
+2. **Session Cookie**: If no token is in the query:
+   - Checks for a valid session cookie
+   - On success: Grants access to the protected resource
+   - On failure: Returns HTTP 401 Unauthorized
 
-### Memory Safety
-
-The rate limiter implements memory protection to prevent unbounded growth:
-
-- **Max Tracked IPs**: Configurable via `maxRateLimitEntries` (default: 10,000 entries, ~2.4 MB maximum memory)
-- **Eviction Policy**: Least Recently Used (LRU) - oldest entries are removed when limit is reached
-- **Expired Entries**: Entries older than 1 hour are automatically cleaned up during normal operation
-
-You can adjust the limit based on your needs. Lower values reduce memory usage but may affect rate limiting under heavy load. Higher values provide more tracking capacity but use more memory (~240 bytes per IP).
-
-This ensures the middleware remains memory-efficient even under sustained attacks with rotating IPs.
+This ensures that providing a token always validates it, even if a previous valid cookie exists.
 
 ## Security Considerations
 
