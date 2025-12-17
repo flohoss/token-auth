@@ -2,16 +2,24 @@ package token
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 )
 
 type Token struct {
 	AllowedTokens []string
+	hashedTokens  map[string]bool
 }
 
 func New(allowedTokens []string) *Token {
+	hashedTokens := make(map[string]bool, len(allowedTokens))
+	for _, t := range allowedTokens {
+		hashedTokens[HashToken(t)] = true
+	}
+
 	return &Token{
 		AllowedTokens: allowedTokens,
+		hashedTokens:  hashedTokens,
 	}
 }
 
@@ -30,9 +38,8 @@ func (t *Token) Valid(value string, isHash bool) bool {
 		providedHash = HashToken(value)
 	}
 
-	for _, allowedToken := range t.AllowedTokens {
-		allowedHash := HashToken(allowedToken)
-		if providedHash == allowedHash {
+	for hash := range t.hashedTokens {
+		if subtle.ConstantTimeCompare([]byte(providedHash), []byte(hash)) == 1 {
 			return true
 		}
 	}

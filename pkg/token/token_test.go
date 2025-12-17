@@ -35,6 +35,15 @@ func TestNew(t *testing.T) {
 	if tok.AllowedTokens[0] != "token1" {
 		t.Errorf("Expected first token 'token1', got '%s'", tok.AllowedTokens[0])
 	}
+
+	if len(tok.hashedTokens) != 2 {
+		t.Errorf("Expected 2 hashed tokens precomputed, got %d", len(tok.hashedTokens))
+	}
+
+	hash1 := HashToken("token1")
+	if !tok.hashedTokens[hash1] {
+		t.Error("Token1 hash should be precomputed and stored in map")
+	}
 }
 
 func TestValid_WithPlaintext(t *testing.T) {

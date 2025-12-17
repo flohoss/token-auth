@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/flohoss/tokenauth/pkg/cookie"
 	"github.com/flohoss/tokenauth/pkg/token"
@@ -74,16 +73,13 @@ func (t *tokenAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 		q := req.URL.Query()
 		q.Del(t.tokenParam)
-		req.URL.RawQuery = q.Encode()
 
-		newURL := &url.URL{
-			Scheme:   req.URL.Scheme,
-			Host:     req.URL.Host,
-			Path:     req.URL.Path,
-			RawQuery: q.Encode(),
+		redirectURL := req.URL.Path
+		if len(q) > 0 {
+			redirectURL += "?" + q.Encode()
 		}
 
-		http.Redirect(rw, req, newURL.String(), http.StatusTemporaryRedirect)
+		http.Redirect(rw, req, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
