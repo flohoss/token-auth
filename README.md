@@ -24,7 +24,7 @@ experimental:
   plugins:
     tokenauth:
       moduleName: github.com/flohoss/tokenauth
-      version: v0.1.0
+      version: v0.4.0
 ```
 
 Or with Docker labels:
@@ -32,7 +32,7 @@ Or with Docker labels:
 ```yaml
 labels:
   - 'traefik.experimental.plugins.tokenauth.modulename=github.com/flohoss/tokenauth'
-  - 'traefik.experimental.plugins.tokenauth.version=v0.1.0'
+  - 'traefik.experimental.plugins.tokenauth.version=v0.4.0'
 ```
 
 ### Dynamic Configuration
@@ -54,8 +54,8 @@ http:
             sameSite: 'Strict'
             maxAge: 0
           allowedTokens:
-            - 'your-secret-token-1'
-            - 'your-secret-token-2'
+            - 'your-secret-token-abcdefghij1234'
+            - 'your-secret-token-abcdefghij5678'
 ```
 
 Or with Docker labels:
@@ -68,7 +68,7 @@ labels:
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.secure=true'
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.sameSite=Strict'
   - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.cookie.maxAge=0'
-  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.allowedTokens[0]=your-secret-token'
+  - 'traefik.http.middlewares.tokenauth.plugin.tokenauth.allowedTokens[0]=your-secret-token-abcdefghij1234'
 ```
 
 ## Token Requirements
@@ -160,7 +160,7 @@ middlewares:
         tokenParam: token
         errorRedirectURL: https://example.com/access-denied
         allowedTokens:
-          - your-secret-token
+          - your-secret-token-abcdefghij1234
 ```
 
 Users are redirected with `HTTP 303 See Other` to your custom error page.
@@ -188,7 +188,7 @@ Token validation uses constant-time comparison to prevent timing-based attacks t
 
 ### First-Time Authentication
 
-1. User visits: `https://example.com?token=your-secret-token-1`
+1. User visits: `https://example.com?token=your-secret-token-abcdefghij1234`
 2. Middleware validates the token
 3. Token is hashed (SHA-256) and stored in a secure cookie
 4. User is redirected to: `https://example.com` (clean URL)
